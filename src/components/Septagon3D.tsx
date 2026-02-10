@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Cylinder, Html, MeshReflectorMaterial, Box, Environment, Edges } from '@react-three/drei';
 import * as THREE from 'three';
@@ -82,7 +82,7 @@ const SideBox = ({ index, radius, height, segments }: { index: number, radius: n
 const Tray = ({ index, radius, innerRadius, height, segments }: { index: number, radius: number, innerRadius: number, height: number, segments: number }) => {
     const [isOpen, setIsOpen] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const meshRef = useRef<any>();
+    const meshRef = useRef<any>(null);
 
     // Calculate face alignment
     // Face i is between vertex i and i+1
