@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Cylinder, Html, MeshReflectorMaterial, Box, Environment, Edges } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Cylinder, Html, MeshReflectorMaterial, Box, Environment, Edges, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 const ClockContent = () => {
@@ -22,7 +22,7 @@ const ClockContent = () => {
     const dateString = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     return (
-        <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border-4 border-cyan-400 bg-gray-900 shadow-[0_0_30px_rgba(34,211,238,0.4)]">
+        <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border-4 border-cyan-400 bg-gray-900 shadow-[0_0_30px_rgba(34,211,238,0.4)]">
             <div className="text-cyan-300 font-bold font-mono text-sm uppercase tracking-widest mb-1 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">{dayString}</div>
             <div className="text-white font-bold text-4xl tracking-wider font-mono drop-shadow-[0_0_15px_rgba(255,255,255,0.9)]">
                 {timeString}
@@ -32,7 +32,95 @@ const ClockContent = () => {
     );
 };
 
-// Side Box Component
+// Movable Box Component
+
+
+// Movable Box Component
+const MovableBox = ({
+    name,
+    position,
+    rotation,
+    isSelected,
+    mode,
+    onSelect,
+    onTransformEnd
+}: {
+    name: string,
+    position: [number, number, number],
+    rotation: [number, number, number],
+    isSelected: boolean,
+    mode: "translate" | "rotate",
+    onSelect: () => void,
+    onTransformEnd: (pos: [number, number, number], rot: [number, number, number]) => void
+}) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const meshRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupRef = useRef<any>(null);
+
+    const updateTransform = () => {
+        if (meshRef.current) {
+            const newPos = meshRef.current.position.toArray();
+            const newRot = meshRef.current.rotation.toArray().slice(0, 3) as [number, number, number];
+            onTransformEnd(newPos, newRot);
+
+            console.log(`${name} Transform Saved:`, {
+                position: newPos,
+                rotation: newRot
+            });
+        }
+    };
+
+    return (
+        <group ref={groupRef}>
+            <mesh
+                ref={meshRef}
+                position={position}
+                rotation={rotation}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect();
+                }}
+            >
+                <boxGeometry args={[2.6, 0.5, 1]} />
+                <meshStandardMaterial
+                    color={isSelected ? "#64748b" : "#475569"}
+                    metalness={0.5}
+                    roughness={0.2}
+                />
+                <Edges color={isSelected ? "#22d3ee" : "#cbd5e1"} />
+            </mesh>
+
+            {isSelected && mode === 'translate' && (
+                <TransformControls
+                    object={meshRef}
+                    mode="translate"
+                    enabled={true}
+                    showX={true}
+                    showY={false}
+                    showZ={true}
+                    size={1.2}
+                    onMouseUp={updateTransform}
+                />
+            )}
+
+            {isSelected && mode === 'rotate' && (
+                <TransformControls
+                    object={meshRef}
+                    mode="rotate"
+                    enabled={true}
+                    showX={false}
+                    showY={true}
+                    showZ={false}
+                    size={1.2}
+                    onMouseUp={updateTransform}
+                />
+            )}
+        </group>
+    );
+};
+
+// SideBox Component
 const SideBox = ({ index, radius, height, segments }: { index: number, radius: number, height: number, segments: number }) => {
     // Face i is between vertex i and i+1
     const angleStep = (Math.PI * 2) / segments;
@@ -166,6 +254,93 @@ const Tray = ({ index, radius, innerRadius, height, segments }: { index: number,
     );
 };
 
+
+// Movable Triangle Component (Prism)
+const MovableTriangle = ({
+    name,
+    position,
+    rotation,
+    isSelected,
+    mode,
+    onSelect,
+    onTransformEnd
+}: {
+    name: string,
+    position: [number, number, number],
+    rotation: [number, number, number],
+    isSelected: boolean,
+    mode: "translate" | "rotate",
+    onSelect: () => void,
+    onTransformEnd: (pos: [number, number, number], rot: [number, number, number]) => void
+}) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const meshRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupRef = useRef<any>(null);
+
+    const updateTransform = () => {
+        if (meshRef.current) {
+            const newPos = meshRef.current.position.toArray();
+            const newRot = meshRef.current.rotation.toArray().slice(0, 3) as [number, number, number];
+            onTransformEnd(newPos, newRot);
+
+            console.log(`${name} Transform Saved:`, {
+                position: newPos,
+                rotation: newRot
+            });
+        }
+    };
+
+    return (
+        <group ref={groupRef}>
+            <mesh
+                ref={meshRef}
+                position={position}
+                rotation={rotation}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect();
+                }}
+            >
+                {/* Regular Polygon (Triangle), extruded */}
+                <cylinderGeometry args={[0.75, 0.75, 0.5, 3]} />
+                <meshStandardMaterial
+                    color={isSelected ? "#64748b" : "#475569"}
+                    metalness={0.5}
+                    roughness={0.2}
+                />
+                <Edges color={isSelected ? "#22d3ee" : "#cbd5e1"} />
+            </mesh>
+
+            {isSelected && mode === 'translate' && (
+                <TransformControls
+                    object={meshRef}
+                    mode="translate"
+                    enabled={true}
+                    showX={true}
+                    showY={false}
+                    showZ={true}
+                    size={1.2}
+                    onMouseUp={updateTransform}
+                />
+            )}
+
+            {isSelected && mode === 'rotate' && (
+                <TransformControls
+                    object={meshRef}
+                    mode="rotate"
+                    enabled={true}
+                    showX={false}
+                    showY={true}
+                    showZ={false}
+                    size={1.2}
+                    onMouseUp={updateTransform}
+                />
+            )}
+        </group>
+    );
+};
+
 const SeptagonCase = () => {
     // Dimensions
     const radius = 3;
@@ -176,18 +351,56 @@ const SeptagonCase = () => {
     // Corrected rotation based on manual alignment
     const innerRotation = -0.67;
 
+    const [selectedObj, setSelectedObj] = useState<string | null>(null);
+    const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate');
+
+    // Lifted State for Boxes
+    const [box1App, setBox1App] = useState<{ pos: [number, number, number], rot: [number, number, number] }>({
+        pos: [0.01050876359243924, 0.5, -3.220336225713058],
+        rot: [0, 0, 0]
+    });
+    const [box2App, setBox2App] = useState<{ pos: [number, number, number], rot: [number, number, number] }>({
+        pos: [2.542751480021224, 0.5, -2.0404691552815315],
+        rot: [-3.141592653589793, 0.8609642032814572, -3.141592653589793]
+    });
+    // Lifted State for Triangle
+    const [triangleApp, setTriangleApp] = useState<{ pos: [number, number, number], rot: [number, number, number] }>({
+        pos: [1.5463158243971773, 0.5, -3.2240539301134943],
+        rot: [-3.141592653589793, -0.611760600252539, -3.141592653589793]
+    });
+
+
+    const { gl } = useThree();
+
+
+    useEffect(() => {
+        const handleContextMenu = (e: MouseEvent) => {
+            e.preventDefault(); // Prevent default browser context menu
+            setTransformMode(prev => prev === 'translate' ? 'rotate' : 'translate');
+            console.log("Context menu prevented. Mode toggled.");
+        };
+
+        // Add event listener to the canvas element
+        const canvas = gl.domElement;
+        canvas.addEventListener('contextmenu', handleContextMenu);
+
+        return () => {
+            canvas.removeEventListener('contextmenu', handleContextMenu);
+        };
+    }, [gl]);
+
+    // Handle background click to deselect
+    const handleBackgroundClick = () => {
+        setSelectedObj(null);
+    };
+
+    // Dividers generation
     const dividers = Array.from({ length: segments }).map((_, i) => {
         const angle = (i * Math.PI * 2) / segments;
-
-        // Increased retraction to prevent corners from sticking out of the glass shell
         const wallLength = radius - innerRadius - 0.25;
-
-        // Position: Center point of the divider
         const distFromCenter = innerRadius + (wallLength / 2);
-
         const x = Math.cos(angle) * distFromCenter;
         const z = Math.sin(angle) * distFromCenter;
-
         return (
             <Box
                 key={i}
@@ -241,19 +454,50 @@ const SeptagonCase = () => {
                 <SideBox index={0} radius={radius} height={height} segments={segments} />
 
                 {/* LED Clock Interface */}
-                <group position={[0, height - 0.02, 0]}>
-                    <Html transform occlude position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={0.25} zIndexRange={[100, 0]}>
-                        <ClockContent />
-                    </Html>
-                    <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-                        <ringGeometry args={[1.3, 1.45, 64]} />
-                        <meshBasicMaterial color="#06b6d4" toneMapped={false} />
-                    </mesh>
-                </group>
+                {/* Added TransformControls for manual alignment */}
+                <TransformControls
+                    mode={transformMode}
+                    enabled={selectedObj === 'clock'}
+                    showX={selectedObj === 'clock'}
+                    showY={selectedObj === 'clock'}
+                    showZ={selectedObj === 'clock'}
+                    size={selectedObj === 'clock' ? 1 : 0}
+                    onMouseUp={(e: any) => {
+                        if (e.target.object) console.log("Clock Transform:", {
+                            position: e.target.object.position.toArray(),
+                            rotation: e.target.object.rotation.toArray().slice(0, 3)
+                        });
+                    }}
+                >
+                    <group
+                        position={[0, height - 0.02 + 0.01, 0]}
+                        onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedObj('clock');
+                        }}
+                    >
+                        <Html transform occlude position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={0.25} zIndexRange={[100, 0]}>
+                            <ClockContent />
+                        </Html>
+                        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+                            <ringGeometry args={[0.95, 1.2, 64]} />
+                            <meshBasicMaterial color="#06b6d4" toneMapped={false} />
+                        </mesh>
+                    </group>
+                </TransformControls>
             </group>
 
             {/* Floor - Rotated to match Outer Shell (0) */}
-            <Cylinder args={[radius - 0.02, radius - 0.02, 0.02, segments]} position={[0, 0.02, 0]} rotation={[0, 0, 0]}>
+            <Cylinder
+                onClick={() => {
+                    // Only handle background clicks if we didn't click on an object first
+                    // The other onClick/DoubleClick handlers use stopPropagation()
+                    handleBackgroundClick();
+                }}
+                args={[radius - 0.02, radius - 0.02, 0.02, segments]}
+                position={[0, 0.02, 0]}
+                rotation={[0, 0, 0]
+                }>
                 <MeshReflectorMaterial
                     blur={[400, 100]}
                     resolution={1024}
@@ -268,6 +512,37 @@ const SeptagonCase = () => {
                     mirror={0.5}
                 />
             </Cylinder>
+
+            {/* Movable Boxes for User Alignment */}
+            <MovableBox
+                name="Box 1"
+                position={box1App.pos}
+                rotation={box1App.rot}
+                isSelected={selectedObj === 'box1'}
+                mode={transformMode}
+                onSelect={() => setSelectedObj('box1')}
+                onTransformEnd={(pos, rot) => setBox1App({ pos, rot })}
+            />
+            <MovableBox
+                name="Box 2"
+                position={box2App.pos}
+                rotation={box2App.rot}
+                isSelected={selectedObj === 'box2'}
+                mode={transformMode}
+                onSelect={() => setSelectedObj('box2')}
+                onTransformEnd={(pos, rot) => setBox2App({ pos, rot })}
+            />
+            {/* Movable Triangle Filler */}
+            <MovableTriangle
+                name="Triangle"
+                position={triangleApp.pos}
+                rotation={triangleApp.rot}
+                isSelected={selectedObj === 'triangle'}
+                mode={transformMode}
+                onSelect={() => setSelectedObj('triangle')}
+                onTransformEnd={(pos, rot) => setTriangleApp({ pos, rot })}
+            />
+
         </group>
     );
 };
@@ -290,10 +565,10 @@ export const Septagon3D = () => {
                     <meshStandardMaterial color="#0f172a" roughness={0.8} metalness={0.2} />
                 </mesh>
 
-                <OrbitControls minPolarAngle={0} maxPolarAngle={Math.PI / 2.1} enablePan={false} />
+                <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 2.1} enablePan={false} />
             </Canvas>
 
 
         </div>
     );
-};
+}
